@@ -62,9 +62,14 @@ class TestSearchFieldSelection:
         mock_assigned.name = "Jane Smith"
         mock_issue.assigned_to = mock_assigned
 
-        # Mock timestamps
+        # Mock timestamps and planning fields
+        mock_issue.start_date = None
+        mock_issue.due_date = None
         mock_issue.created_on = None
         mock_issue.updated_on = None
+        mock_issue.estimated_hours = None
+        mock_issue.spent_hours = None
+        mock_issue.done_ratio = None
 
         return mock_issue
 
@@ -76,10 +81,10 @@ class TestSearchFieldSelection:
 
         result = await search_redmine_issues("bug")
 
-        # Should return all 10 fields
+        # Should return all 15 fields
         assert isinstance(result, list)
         assert len(result) == 1
-        assert len(result[0]) == 10
+        assert len(result[0]) == 15
         assert "id" in result[0]
         assert "subject" in result[0]
         assert "description" in result[0]
@@ -88,8 +93,13 @@ class TestSearchFieldSelection:
         assert "priority" in result[0]
         assert "author" in result[0]
         assert "assigned_to" in result[0]
+        assert "start_date" in result[0]
+        assert "due_date" in result[0]
         assert "created_on" in result[0]
         assert "updated_on" in result[0]
+        assert "estimated_hours" in result[0]
+        assert "spent_hours" in result[0]
+        assert "done_ratio" in result[0]
 
     @pytest.mark.asyncio
     async def test_fields_minimal_id_subject(self, mock_redmine):
@@ -151,7 +161,7 @@ class TestSearchFieldSelection:
         # Minimal should have fewer keys per issue
         assert len(result_minimal[0]) < len(result_all[0])
         assert len(result_minimal[0]) == 2  # Only id and subject
-        assert len(result_all[0]) == 10  # All fields
+        assert len(result_all[0]) == 15  # All fields
 
     @pytest.mark.asyncio
     async def test_fields_asterisk_returns_all(self, mock_redmine):
@@ -161,7 +171,7 @@ class TestSearchFieldSelection:
 
         result = await search_redmine_issues("bug", fields=["*"])
 
-        assert len(result[0]) == 10  # All fields
+        assert len(result[0]) == 15  # All fields
 
     @pytest.mark.asyncio
     async def test_fields_all_keyword(self, mock_redmine):
@@ -171,7 +181,7 @@ class TestSearchFieldSelection:
 
         result = await search_redmine_issues("bug", fields=["all"])
 
-        assert len(result[0]) == 10  # All fields
+        assert len(result[0]) == 15  # All fields
 
     @pytest.mark.asyncio
     async def test_fields_invalid_ignored(self, mock_redmine):
@@ -261,7 +271,7 @@ class TestSearchFieldSelection:
         result = await search_redmine_issues("bug", limit=25)
 
         # Should return all fields (backward compatible)
-        assert len(result[0]) == 10
+        assert len(result[0]) == 15
 
     @pytest.mark.asyncio
     async def test_fields_with_explicit_params(self, mock_redmine):

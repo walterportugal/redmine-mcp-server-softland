@@ -7,7 +7,7 @@ used in the search optimization feature.
 
 import pytest
 from unittest.mock import Mock
-from datetime import datetime
+from datetime import date, datetime
 import os
 import sys
 
@@ -61,9 +61,14 @@ class TestIssueToDictSelective:
         mock_assigned.name = "Jane Smith"
         mock_issue.assigned_to = mock_assigned
 
-        # Mock timestamps
+        # Mock timestamps and planning fields
+        mock_issue.start_date = date(2024, 1, 10)
+        mock_issue.due_date = date(2024, 2, 28)
         mock_issue.created_on = datetime(2024, 1, 15, 10, 30, 0)
         mock_issue.updated_on = datetime(2024, 1, 16, 14, 45, 0)
+        mock_issue.estimated_hours = 8.0
+        mock_issue.spent_hours = 3.5
+        mock_issue.done_ratio = 45
 
         return mock_issue
 
@@ -98,9 +103,14 @@ class TestIssueToDictSelective:
         # No assigned_to (None)
         mock_issue.assigned_to = None
 
-        # No timestamps
+        # No timestamps or planning fields
+        mock_issue.start_date = None
+        mock_issue.due_date = None
         mock_issue.created_on = None
         mock_issue.updated_on = None
+        mock_issue.estimated_hours = None
+        mock_issue.spent_hours = None
+        mock_issue.done_ratio = None
 
         return mock_issue
 
@@ -110,7 +120,7 @@ class TestIssueToDictSelective:
         expected = _issue_to_dict(mock_issue)
 
         assert set(result.keys()) == set(expected.keys())
-        assert len(result) == 10  # All 10 fields
+        assert len(result) == 15  # All 15 fields
         assert "id" in result
         assert "subject" in result
         assert "description" in result
@@ -121,7 +131,7 @@ class TestIssueToDictSelective:
         expected = _issue_to_dict(mock_issue)
 
         assert set(result.keys()) == set(expected.keys())
-        assert len(result) == 10
+        assert len(result) == 15
 
     def test_all_keyword_returns_all_fields(self, mock_issue):
         """Test that fields=["all"] returns all fields."""
@@ -129,7 +139,7 @@ class TestIssueToDictSelective:
         expected = _issue_to_dict(mock_issue)
 
         assert set(result.keys()) == set(expected.keys())
-        assert len(result) == 10
+        assert len(result) == 15
 
     def test_single_field_id(self, mock_issue):
         """Test selecting only the id field."""
@@ -231,14 +241,19 @@ class TestIssueToDictSelective:
             "priority",
             "author",
             "assigned_to",
+            "start_date",
+            "due_date",
             "created_on",
             "updated_on",
+            "estimated_hours",
+            "spent_hours",
+            "done_ratio",
         ]
         result = _issue_to_dict_selective(mock_issue, all_field_names)
         expected = _issue_to_dict(mock_issue)
 
         assert set(result.keys()) == set(expected.keys())
-        assert len(result) == 10
+        assert len(result) == 15
 
     def test_invalid_field_name_ignored(self, mock_issue):
         """Test that invalid field names are silently ignored."""
@@ -337,7 +352,7 @@ class TestIssueToDictSelective:
         # Minimal should have fewer keys
         assert len(minimal_fields_result) < len(all_fields_result)
         assert len(minimal_fields_result) == 2
-        assert len(all_fields_result) == 10
+        assert len(all_fields_result) == 15
 
     def test_case_sensitive_field_names(self, mock_issue):
         """Test that field names are case-sensitive."""

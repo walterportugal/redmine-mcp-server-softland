@@ -22,8 +22,22 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastmcp.server.dependencies import get_access_token
-from redminelib import Redmine
+try:
+    from fastmcp.server.dependencies import get_access_token, get_http_request
+except Exception:
+    # Allow running tests without fastmcp installed by providing fallbacks.
+    def get_access_token():
+        return None
+
+    get_http_request = None
+
+try:
+    from redminelib import Redmine
+except Exception:
+    # Provide a lightweight placeholder so unit tests can patch `Redmine`.
+    class Redmine:  # type: ignore
+        def __init__(self, *args, **kwargs):
+            pass
 
 logger = logging.getLogger("redmine_mcp_server")
 
@@ -186,6 +200,47 @@ def _get_redmine_client() -> Redmine:
         return g["Redmine"](g["REDMINE_URL"], requests={"headers": headers})
 
     # Legacy mode: reuse a cached singleton.
+    # New behavior: allow per-request API key via the X-Redmine-API-Key header.
+    # This runs only when no OAuth access token is present.
+    api_key = None
+    if get_http_request is not None:
+        try:
+            req = get_http_request()
+            if req is not None:
+                # Try common header access patterns (case-insensitive).
+                headers = getattr(req, "headers", None)
+                if headers is not None:
+                    try:
+                        api_key = headers.get("X-Redmine-API-Key") or headers.get(
+                            "x-redmine-api-key"
+                        )
+                    except Exception:
+                        # headers may not implement .get(); ignore and try scope
+                        api_key = None
+                if api_key is None:
+                    scope = getattr(req, "scope", None)
+                    if scope and "headers" in scope:
+                        for k, v in scope["headers"]:
+                            try:
+                                key = k.decode() if isinstance(k, (bytes, bytearray)) else k
+                                if key.lower() == "x-redmine-api-key":
+                                    api_key = (
+                                        v.decode() if isinstance(v, (bytes, bytearray)) else v
+                                    )
+                                    break
+                            except Exception:
+                                continue
+        except Exception as e:
+            logger.debug("Could not read HTTP request for per-request API key: %s", e)
+
+    if api_key:
+        requests_config = _build_requests_config()
+        if requests_config:
+            return g["Redmine"](
+                g["REDMINE_URL"], key=api_key, requests=requests_config
+            )
+        return g["Redmine"](g["REDMINE_URL"], key=api_key)
+
     if g["_legacy_client"] is None:
         g["_legacy_client"] = _build_legacy_client()
     _legacy_client = g["_legacy_client"]

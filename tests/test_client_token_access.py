@@ -54,3 +54,22 @@ class TestOAuthClientBuilding:
         source = inspect.getsource(_client)
         assert "oauth_middleware" not in source
         assert "current_redmine_token" not in source
+
+    def test_uses_api_key_from_header(self):
+        from redmine_mcp_server import _client
+
+        with (
+            patch.object(_client, "REDMINE_URL", "https://r.example.com"),
+            patch.object(_client, "redmine", None),
+            patch.object(_client, "_legacy_client", None),
+            patch.object(_client, "Redmine") as mock_redmine,
+            patch("redmine_mcp_server._client.get_access_token", return_value=None),
+            patch("redmine_mcp_server._client.get_http_request") as mock_get_req,
+        ):
+            req = MagicMock()
+            req.headers = {"X-Redmine-API-Key": "user-key-123"}
+            mock_get_req.return_value = req
+            _client._get_redmine_client()
+            mock_redmine.assert_called_once_with(
+                "https://r.example.com", key="user-key-123"
+            )

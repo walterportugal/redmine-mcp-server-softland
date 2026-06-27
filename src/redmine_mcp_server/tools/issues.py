@@ -230,8 +230,13 @@ def _issue_to_dict(issue: Any, include_custom_fields: bool = False) -> Dict[str,
             if assigned is not None
             else None
         ),
+        "start_date": _safe_isoformat(getattr(issue, "start_date", None)),
+        "due_date": _safe_isoformat(getattr(issue, "due_date", None)),
         "created_on": _safe_isoformat(getattr(issue, "created_on", None)),
         "updated_on": _safe_isoformat(getattr(issue, "updated_on", None)),
+        "estimated_hours": getattr(issue, "estimated_hours", None),
+        "spent_hours": getattr(issue, "spent_hours", None),
+        "done_ratio": getattr(issue, "done_ratio", None),
     }
 
     if include_custom_fields:
@@ -260,8 +265,13 @@ def _issue_to_dict_selective(
         - priority: Priority info (dict with id and name)
         - author: Author info (dict with id and name)
         - assigned_to: Assigned user info (dict with id and name, or None)
+        - start_date: Planned start date (ISO format)
+        - due_date: Planned due date (ISO format)
         - created_on: Creation timestamp (ISO format)
         - updated_on: Last update timestamp (ISO format)
+        - estimated_hours: Estimated hours (float or None)
+        - spent_hours: Total spent hours (float or None)
+        - done_ratio: Completion percentage 0-100 (int or None)
 
     Returns:
         Dictionary containing only the requested fields.
@@ -312,8 +322,13 @@ def _issue_to_dict_selective(
             if assigned is not None
             else None
         ),
+        "start_date": _safe_isoformat(getattr(issue, "start_date", None)),
+        "due_date": _safe_isoformat(getattr(issue, "due_date", None)),
         "created_on": _safe_isoformat(getattr(issue, "created_on", None)),
         "updated_on": _safe_isoformat(getattr(issue, "updated_on", None)),
+        "estimated_hours": getattr(issue, "estimated_hours", None),
+        "spent_hours": getattr(issue, "spent_hours", None),
+        "done_ratio": getattr(issue, "done_ratio", None),
     }
 
     # Return only requested fields (silently skip invalid field names)
